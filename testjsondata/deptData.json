@@ -1,0 +1,42 @@
+{
+    "data": [
+        {
+            "eventName": "테스트2",
+            "date": "2000.11.13 (월)",
+            "time": "17:25",
+            "place": "대마고",
+            "personnel": 1,
+            "department": "토지정보과",
+            "note": "23"
+        },
+        {
+            "eventName": "방가방가",
+            "date": "2000.11.13 (월)",
+            "time": "09:33",
+            "place": "구ㅜ구구구",
+            "personnel": 12,
+            "department": "건설과",
+            "note": "방가방가"
+        },
+        {
+            "eventName": "테스트",
+            "date": "2000.11.17 (금)",
+            "time": "17:25",
+            "place": "대마고",
+            "personnel": 1,
+            "department": "문화관광체육과",
+            "note": ""
+        },
+        {
+            "eventName": "테스트3",
+            "date": "2000.11.19 (일)",
+            "time": "17:25",
+            "place": "대마고등학교",
+            "personnel": 9,
+            "department": "일자리정책과",
+            "note": ""
+        }
+    ],
+    "startDate": "2000.11.13 (월)",
+    "endDate": "2000.11.19 (일)"
+}

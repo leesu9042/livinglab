@@ -7,6 +7,8 @@ import pandas as pd
 from fastapi.responses import StreamingResponse
 from fastapi import FastAPI
 from dephwpcreate.DepHwpCreate import EventTableProcessor
+from dept_data_processor.dateprocess import DeptDataProcessor
+from dong_data_processor.dong_data_processor import DongDataProcessor
 from donghwpcreate.DongHwpCreate import DongTableProcessor
 
 '''
@@ -34,16 +36,27 @@ async def root():
 
 
 
-@app.post("/deptcreatehwp")
+@app.post("/depthwpcreate")
 async def return_hwp(data: Dict):
     # 'data'는 JSON 전체가 dict 형태로 들어옵니다
-    items = data['data']  # 'data' 키에 있는 값이 우리가 원하는 배열입니다
+    # items = data['data']  # 'data' 키에 있는 값이 우리가 원하는 배열입니다
 
+    # df_1 = pd.DataFrame(data['data'])
+    # print("df_1 모양입니다")
+    # print(df_1)
+    # print("df_1 모양입니다")
+
+
+    dept_data_processor = DeptDataProcessor(data)
+    df = dept_data_processor.process_data()
+    start_date = data["startDate"]
+    end_date = data["endDate"]
     # pandas DataFrame으로 변환
-    df = pd.DataFrame(items)  # 'items'는 리스트이므로 바로 DataFrame으로 변환 가능
-    print(df)
+    # df = pd.DataFrame(items)  # 'items'는 리스트이므로 바로 DataFrame으로 변환 가능
+    # print(df)
+    # print("end :" + end_date , "start" + start_date)
 
-    processor = EventTableProcessor("template/templateEx.hwp", df)
+    processor = EventTableProcessor("template/templateEx.hwp", df,start_date,end_date)
     try:
         processor.process()
         # GetTextFile을 사용하여 HWP 파일을 BASE64로 인코딩된 문자열로 가져옴
@@ -73,16 +86,22 @@ async def return_hwp(data: Dict):
 
 
 
-@app.post("/dongcreatehwp")
+@app.post("/donghwpcreate")
 async def return_hwp(data: Dict):
     # 'data'는 JSON 전체가 dict 형태로 들어옵니다
-    items = data['data']  # 'data' 키에 있는 값이 우리가 원하는 배열입니다
+    # items = data['data']  # 'data' 키에 있는 값이 우리가 원하는 배열입니다
+    #
+    # # pandas DataFrame으로 변환
+    # df = pd.DataFrame(items)  # 'items'는 리스트이므로 바로 DataFrame으로 변환 가능
+    # print(df)
 
-    # pandas DataFrame으로 변환
-    df = pd.DataFrame(items)  # 'items'는 리스트이므로 바로 DataFrame으로 변환 가능
-    print(df)
+    d = DongDataProcessor(data)
+    dong_df = d.process_data()
+    print("처리 마침 ㅇㅇ")
+    print(d)
 
-    processor = DongTableProcessor("template/dongrealtemplate2.hwp", df)
+
+    processor = DongTableProcessor("template/dongrealtemplate2.hwp", dong_df)
     try:
         processor.process()
         # GetTextFile을 사용하여 HWP 파일을 BASE64로 인코딩된 문자열로 가져옴

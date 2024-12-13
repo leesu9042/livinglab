@@ -38,24 +38,49 @@ class EventTableProcessor:
         # self.df = self.df.replace(r'\n', '', regex=True).fillna(" ")
         self.df = self.df.fillna(" ")  # NaN 값을 " "으로 채우기
 
-        # 가장 마지막애 년도 뽑기
-        date_df = self.df['date']
-        start_date = date_df.iloc[-1]
-        # 첫 번째 점(.) 앞의 숫자만 추출
-        self.year = "20" + start_date.split(".")[0]
+        # # 가장 마지막애 년도 뽑기
+        # date_df = self.df['date']
+        # start_date = date_df.iloc[-1]
+        # # 첫 번째 점(.) 앞의 숫자만 추출
+        # self.year = "20" + start_date.split(".")[0]
+        #
+        # # 날짜 컬럼 처리 년도삭제 +  date_counts컬럼 생성
+        # self.df['date'] = self.df['date'].str.split('.', n=1).str[1]
+        # self.date_counts = self.df['date'].value_counts().reset_index()
+        # self.date_counts.columns = ['date', 'count']
+        #
+        # # 날짜 순으로 정렬된 df["date"] -> date_column_df으로
+        # self.date_counts[['month', 'day']] = self.date_counts['date'].apply(
+        #     lambda x: pd.Series(self._extract_month_day(x)))
+        # self.date_counts = self.date_counts.sort_values(by=['month', 'day']).drop(columns=['month', 'day']).reset_index(
+        #     drop=True)
+        #
+        # print("self.date_counts")
+        if self.start_year == self.end_year: self.end_year = ""
+        # 만약 시작 date와 마지막 date의 년도가 같다면 end_year은 빈칸으로
 
-        # 날짜 컬럼 처리 년도삭제 +  date_counts컬럼 생성
-        self.df['date'] = self.df['date'].str.split('.', n=1).str[1]
-        self.date_counts = self.df['date'].value_counts().reset_index()
-        self.date_counts.columns = ['date', 'count']
+        # date별로 카운트와 datetime 컬럼 추가하여 새로운 DataFrame 생성
+        self.date_counts = self.df.groupby('date').size().reset_index(name='count')
 
-        # 날짜 순으로 정렬된 df["date"] -> date_column_df으로
-        self.date_counts[['month', 'day']] = self.date_counts['date'].apply(
-            lambda x: pd.Series(self._extract_month_day(x)))
-        self.date_counts = self.date_counts.sort_values(by=['month', 'day']).drop(columns=['month', 'day']).reset_index(
-            drop=True)
+        # datetime 컬럼 추가 및 정렬
+        self.date_counts['datetime'] = pd.to_datetime(self.date_counts['date'].str.extract(r'(\d{4}\.\d{2}\.\d{2})')[0],
+                                                      format='%Y.%m.%d')
+        self.date_counts = self.date_counts.sort_values(by='datetime').reset_index(drop=True)
 
-        print("self.date_counts")
+        self.date_counts['date'] = self.date_counts['date'].str.split('.', n=1).str[1]  # delete year
+        self.date_counts['date'] = self.date_counts['date'].apply(self.format_date)  # 날짜 형식 조정
+
+    def format_date(self, date_str):
+        """날짜 문자열 형식을 '월. 일.'에서 '월.  일.'로 변경합니다."""
+        return re.sub(r"(\d+)\.(\d+)\.", r"\1.  \2.", date_str)
+
+    def simplify_date(self , date_str):
+        # 연도와 요일 부분을 제거합니다.
+        parts = date_str.split('.')  # 먼저 점을 기준으로 문자열을 분리합니다.
+        month_day = parts[1:3]  # 월과 일 부분만 추출합니다.
+        clean_date = '.'.join(month_day).replace(' ', '')  # 공백을 제거하고 문자열을 다시 조합합니다.
+        clean_date = clean_date[:5] + " " + clean_date[5:]  # 월과 일 사이에 공간을 추가합니다.
+        return clean_date
 
     def get_first_last_date_components(self):
         """데이터프레임에서 첫 번째와 마지막 날짜의 월, 일, 요일을 추출하는 메소드"""
@@ -105,6 +130,7 @@ class EventTableProcessor:
     def insert_event_data(self):
         """date 컬럼을 제외한 데이터 삽입"""
         df_no_date = self.df.drop(columns=['date'])
+
         self.hwp.set_pos(15, 0, 0)
         self.hwp.TableCellBlock()
         self.hwp.TableCellBlockExtend()
@@ -136,6 +162,7 @@ class EventTableProcessor:
         else:
             print("날짜 형식이 올바르지 않습니다.")
 
+
     def get_first_last_date_components(self):
         """첫 번째와 마지막 날짜에서 월, 일, 요일을 분리"""
         # df의 첫 번째와 마지막 인덱스에서 date 값 추출
@@ -147,6 +174,12 @@ class EventTableProcessor:
         self.last_date_components = self.split_date_components(last_date)
 
         return self.first_date_components, self.last_date_components
+
+    def extract_year(self, date_str):
+        # 년도 부분만 추출합니다.
+        parts = date_str.split('.')  # 점을 기준으로 문자열을 분리합니다.
+        year = parts[0].strip()  # 공백 제거
+        return year
 
     def change_period(self):
         """처음 날짜와 마지막 날짜를 넣어주면 날짜를 변환"""
@@ -163,11 +196,25 @@ class EventTableProcessor:
         lastDay = self.last_date_components[1] + "."
 
         # 기간 계산
-        period = firstMonth + firstDay + "~ " + lastMonth + lastDay
-        print(period)
+        # period = firstMonth + firstDay + "~ " + lastMonth + lastDay
+        # print(period)
 
-        # 한글 문서에 기간 삽입
-        self.hwp.insert_text(f"[{self.year}. {period}]")
+        firstDate = self.simplify_date(self.first_date_components)
+        endDate = self.simplify_date(self.last_date_components)
+        firstYear = self.extract_year(self.first_date_components)
+        endYear = self.extract_year(self.last_date_components)
+
+        print(firstDate)
+
+        if firstYear == endYear :
+            self.hwp.insert_text(f"[{firstYear}. {firstDate} ~ {endDate}]")
+        else :
+            # 한글 문서에 기간 삽입
+            self.hwp.insert_text(f"[{firstYear}. {firstDate} ~ {endYear}. {endDate}]")
+
+
+
+
 
     def process(self):
         self.reset_time_field(7)          # 초기화
@@ -175,9 +222,6 @@ class EventTableProcessor:
         self.adjust_table_rows()           # 테이블 행 조정
         self.insert_dates()                # 날짜 삽입
         self.insert_event_data()           # 행사 데이터 삽입
-
-
-
         # 추출한 날짜로 기간 설정
         self.change_period()
 

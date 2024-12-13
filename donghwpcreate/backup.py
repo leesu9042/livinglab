@@ -1,4 +1,3 @@
-import numpy as np
 from pyhwpx import Hwp
 import pandas as pd
 import re
@@ -12,15 +11,11 @@ class DongTableProcessor:
         self.template_path = template_path
         self.df = dataframe
         self.hwp.Open(template_path, arg="versionwarning:false")
-        self.date_counts = None  # 이걸로 표의 date컬럼 넣고 , period 교체 + 표 생성
+        self.date_counts = None
         self.start_year = None
         self.end_year = None
         self.first_date_components = None
         self.last_date_components = None
-
-    def get_hwp(self):
-        """Hwp 객체를 리턴하는 메서드"""
-        return self.hwp
 
     def table_clear(self):
         self.hwp.set_pos(11, 0, 0)
@@ -31,8 +26,14 @@ class DongTableProcessor:
         self.hwp.TableDeleteCell(remain_cell=True)  # 셀 내용 전체 삭제
         self.hwp.delete_all_fields()  # 모든 필드 삭제
 
+        # self.hwp.set_cur_field_name(" ")
+        # self.hwp.insert_text("")
+
     def time_field_initial(self):
         self.hwp.set_pos(12, 0, 0)
+        # self.hwp.TableCellBlock()
+        # self.hwp.TableCellBlockExtend()
+        # self.hwp.TableColPageDown()
         self.hwp.set_cur_field_name("time")
 
     def date_field_initial(self):
@@ -55,13 +56,8 @@ class DongTableProcessor:
     def load_and_preprocess_data(self):
         # 컬럼 순서 정렬
         self.df = self.df[['date', 'time', 'dong', 'eventName', 'place', 'personnel', 'phone']]
-        # self.df['personnel'] = self.df['personnel'].replace('', np.nan).fillna(0).astype(int).astype(
-        #     str)  # 정수형 변환 후 문자열 처리
-        # self.df['personnel'] = self.df['personnel'].replace(0, np.nan)
 
         # self.df = pd.read_excel(self.df)
-        # NaN 값을 " "으로 채우기
-        self.df = self.df.fillna(" ")
         self.df = self.df.replace(r'\n', '', regex=True).fillna(" ")
 
         # 데이터의 날짜 년도 추출
@@ -70,9 +66,10 @@ class DongTableProcessor:
         end_date = date_df.iloc[-1]
         self.start_year = start_date.split(".")[0]
         self.end_year = end_date.split(".")[0]
-
         if self.start_year == self.end_year: self.end_year = ""
         # 만약 시작 date와 마지막 date의 년도가 같다면 end_year은 빈칸으로
+
+
 
         # date별로 카운트와 datetime 컬럼 추가하여 새로운 DataFrame 생성
         self.date_counts = self.df.groupby('date').size().reset_index(name='count')
@@ -83,12 +80,41 @@ class DongTableProcessor:
         self.date_counts = self.date_counts.sort_values(by='datetime').reset_index(drop=True)
 
         self.date_counts['date'] = self.date_counts['date'].str.split('.', n=1).str[1]  # delete year
-        self.date_counts['date'] = self.date_counts['date'].apply(
-            self.format_date)  # date column change ex) 12.23 (월) > 12.23.(월)
+        self.date_counts['date'] = self.date_counts['date'].apply(self.format_date)  # date column change ex) 12.23 (월) > 12.23.(월)
+
+
+        # #date_count 생성 date마다 데이터 갯수 보여주는 df
+        # self.date_counts = self.df['date'].astype(str).str.split(' ').str[0]
+        # self.date_counts = self.date_counts.str.replace('.', '-')  # .을 -로 교체
+        # self.date_counts = pd.to_datetime(self.date_counts, format='%Y-%m-%d')  # 날짜 형식에 맞게 변환
+        #
+        # # 날짜별 빈도 계산
+        # self.date_counts = pd.Series(self.date_counts).value_counts().reset_index()
+        # self.date_counts.columns = ['date', 'count']
+        #
+        # # 날짜에서 연도, 월, 일 추출
+        # self.date_counts[['year', 'month', 'day']] = self.date_counts['date'].apply(
+        #     lambda x: pd.Series([x.year, x.month, x.day]))
+        #
+        # # 연도, 월, 일로 정렬
+        # self.date_counts = self.date_counts.sort_values(by=['year', 'month', 'day']).reset_index(drop=True)
 
         # 결과 출력
-        print("dong df")
-        print(self.df)
+        print(self.date_counts)
+
+        # date 컬럼 전처리
+        self.df['date'] = self.df['date'].str.split('.', n=1).str[1]  # delete year
+        self.df['date'] = self.df['date'].apply(self.format_date)  # date column change ex) 12.23 (월) > 12.23.(월)
+        #
+
+        # self.date_counts = self.df['date'].value_counts().reset_index()
+        # self.date_counts.columns = ['date', 'count']
+        # self.date_counts[['month', 'day']] = self.date_counts['date'].apply(
+        #     lambda x: pd.Series(self._extract_month_day(x)))
+        # self.date_counts = self.date_counts.sort_values(by=['month', 'day']).drop(columns=['month', 'day']).reset_index(
+        #     drop=True)
+        #
+        # print(self.date_counts)
 
     def _extract_month_day(self, date_str):
         match = re.search(r'(\d+)\.\s*(\d+)', date_str)
@@ -96,25 +122,15 @@ class DongTableProcessor:
             return int(match.group(1)), int(match.group(2))
         return None
 
-    @staticmethod
-    def remove_leading_zeros(date_str):
-        try:
-            # 정규식을 사용해 월과 일의 앞자리 0 제거
-            cleaned_date = re.sub(r'\b0(\d)', r'\1', date_str)
-            return cleaned_date
-        except Exception as e:
-            print(f"Error processing '{date_str}': {e}")
-            return date_str
-
     def get_first_last_date_components(self):
         """데이터프레임에서 첫 번째와 마지막 날짜의 월, 일, 요일을 추출하는 메소드"""
-        first_date = self.date_counts.iloc[0]["date"]
-        last_date = self.date_counts.iloc[-1]["date"]
+        first_date = self.df.iloc[0]["date"]
+        last_date = self.df.iloc[-1]["date"]
 
         self.first_date_components = self.split_date_components(first_date)
         self.last_date_components = self.split_date_components(last_date)
 
-        # print(self.first_date_components, self.first_date_components)
+        print(self.first_date_components, self.first_date_components)
 
         return self.first_date_components, self.last_date_components
 
@@ -151,17 +167,18 @@ class DongTableProcessor:
         self.hwp.SelectAll()
 
         # 월, 일 추출
-        first_date = self.first_date_components[0] + ". " + self.first_date_components[1] + ". "
-
-        last_date = self.last_date_components[0] + ". " + self.last_date_components[1] + "."
+        firstMonth = self.first_date_components[0] + ". "
+        firstDay = self.first_date_components[1] + ". "
+        lastMonth = self.last_date_components[0] + ". "
+        lastDay = self.last_date_components[1] + "."
 
         # 기간 계산
-        # period = self.start_year + ". " + firstMonth + firstDay + "~ " + next_year + lastMonth + lastDay
-        # print(period)
-        self.insert_period(self.remove_leading_zeros(first_date), self.remove_leading_zeros(last_date))
+        period = self.start_year + ". " + firstMonth + firstDay + "~ " + self.end_year + ". " + lastMonth + lastDay
+        print(period)
+        self.insert_period(period)
 
     # 지정된 위치에 period 넣는 함수
-    def insert_period(self, first_date, last_date):
+    def insert_period(self, period):
         self.hwp.set_pos(0, 1, 0)
         while self.hwp.MoveSelRight():
             text = self.hwp.get_selected_text()  # 파이썬으로 가져와서
@@ -175,8 +192,8 @@ class DongTableProcessor:
         self.hwp.MoveSelRight()
         self.hwp.MoveSelRight()
 
-        if self.end_year == "": # end_year가 "" 라면 end_year = start_year
-            self.hwp.insert_text(f"【{self.start_year}. {first_date}~ {last_date}】")
+        if self.start_year == self.end_year:
+            self.hwp.insert_text(f"【{period}】")
 
         else:
             self.hwp.MoveSelRight()
@@ -187,18 +204,11 @@ class DongTableProcessor:
             self.hwp.MoveSelRight()
             self.hwp.MoveSelRight()
 
-            self.hwp.insert_text(f"【{self.start_year}. {first_date}~ {self.end_year}. {last_date}】")
-
-
+            self.hwp.insert_text(f"【{period}】")
 
     def insert_data(self):
         result_list = [day for day in self.date_counts['date']]
-
-        # result_list 값마다 remove_leading_zeros 적용
-        result_list = [self.remove_leading_zeros(day) for day in self.date_counts['date']]
         self.hwp.put_field_text("date", result_list)
-
-
 
         df_no_date = self.df.drop(columns=['date'])
         self.hwp.set_pos(12, 0, 0)
@@ -213,13 +223,11 @@ class DongTableProcessor:
         self.hwp.clear()
         self.hwp.Quit()  # HwpObject를 종료
 
-
-
-
     def process(self):
         self.field_setting()
         self.load_and_preprocess_data()
         self.adjust_table_rows()
         self.change_period()
         self.insert_data()
-
+        print(self.df)
+        # self.close()
