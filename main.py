@@ -37,7 +37,7 @@ async def root():
 
 
 @app.post("/depthwpcreate")
-async def return_hwp(data: Dict):
+async def return_depthwp(data: Dict):
     # 'data'는 JSON 전체가 dict 형태로 들어옵니다
     # items = data['data']  # 'data' 키에 있는 값이 우리가 원하는 배열입니다
 
@@ -45,6 +45,8 @@ async def return_hwp(data: Dict):
     # print("df_1 모양입니다")
     # print(df_1)
     # print("df_1 모양입니다")
+
+    print(data)
 
 
     dept_data_processor = DeptDataProcessor(data)
@@ -73,6 +75,7 @@ async def return_hwp(data: Dict):
 
         processor.close()  # HwpObject를 종료
         del processor  # 메모리에서 객체 해제
+
         pass
 
     headers = {
@@ -87,7 +90,7 @@ async def return_hwp(data: Dict):
 
 
 @app.post("/donghwpcreate")
-async def return_hwp(data: Dict):
+async def return_donghwp(data: Dict):
     # 'data'는 JSON 전체가 dict 형태로 들어옵니다
     # items = data['data']  # 'data' 키에 있는 값이 우리가 원하는 배열입니다
     #

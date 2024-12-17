@@ -1,11 +1,14 @@
-import pandas as pd
 from datetime import datetime, timedelta
+
+import pandas as pd
+
 
 class DeptDataProcessor:
     def __init__(self, data):
         self.data_df = pd.DataFrame(data['data'])
         self.start_date = data['startDate']
         self.end_date = data['endDate']
+
 
     def process_data(self):
         # personnel을 문자열로 변환 후 소수점 제거
@@ -48,6 +51,8 @@ class DeptDataProcessor:
 
         full_data["date"] = full_data["date"].apply(self.convert_day_to_korean)
 
+
+
         return full_data
 
     def convert_day_to_korean(self, date_str):
@@ -58,4 +63,5 @@ class DeptDataProcessor:
 
         # 한글 요일로 변환
         korean_day = day_mapping.get(day_code, day_code)
+        print(self.data_df.columns)
         return f"{date_part} ({korean_day})"

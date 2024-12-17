@@ -88,6 +88,7 @@ class DongHwpFormatter:
         self.process_table_cells()
         self.process_event_details()
 
+
 # """if __name__ == "__main__":
 #     template_path = r"C:\Users\thdco\OneDrive\Documents\GitHub\font_set\font_set\dongtemplate.hwp"
 #     formatter = HwpDongTableFont(template_path)
