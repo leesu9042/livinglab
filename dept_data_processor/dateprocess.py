@@ -63,5 +63,4 @@ class DeptDataProcessor:
 
         # 한글 요일로 변환
         korean_day = day_mapping.get(day_code, day_code)
-        print(self.data_df.columns)
         return f"{date_part} ({korean_day})"

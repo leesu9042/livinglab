@@ -45,12 +45,23 @@ async def return_depthwp(data: Dict):
     # print("df_1 모양입니다")
     # print(df_1)
     # print("df_1 모양입니다")
-
+    print()
+    print("============ 받은 데이터 ==============")
+    print()
     print(data)
-
+    print()
+    print("============ 받은 데이터 ==============")
 
     dept_data_processor = DeptDataProcessor(data)
     df = dept_data_processor.process_data()
+
+    print()
+    print("============처리 마침 ==============")
+    print()
+    print(df)
+    print()
+    print("============처리 마침 ==============")
+    print()
     start_date = data["startDate"]
     end_date = data["endDate"]
     # pandas DataFrame으로 변환
@@ -100,9 +111,11 @@ async def return_donghwp(data: Dict):
 
     d = DongDataProcessor(data)
     dong_df = d.process_data()
-    print("처리 마침 ㅇㅇ")
-    print(d)
+    print("============처리 마침 ==============")
 
+    print(dong_df)
+
+    print("============처리 마침 ==============")
 
     processor = DongTableProcessor("template/dongrealtemplate2.hwp", dong_df)
     try:
